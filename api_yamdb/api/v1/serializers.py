@@ -1,16 +1,9 @@
 from datetime import datetime as dt
 
+from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
-
-from reviews.models import (
-    Comment,
-    Review,
-    Title,
-    Category,
-    Genre,
-    TitleGenre,
-)
+from reviews.models import Category, Comment, Genre, Review, Title, TitleGenre
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -60,6 +53,7 @@ class TitleSerializer(serializers.ModelSerializer):
         read_only=False,
         queryset=Category.objects.all(),
     )
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Title
@@ -84,18 +78,37 @@ class TitleSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def get_rating(self, obj):
+        reviews = obj.reviews.all()
+        if reviews.exists():
+            return round(reviews.aggregate(Avg('score')).get('score__avg'))
+        return None
+
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = SlugRelatedField(slug_field='username', read_only=True)
+    author = SlugRelatedField(
+        slug_field='username',
+        read_only=True,
+        default=serializers.CurrentUserDefault(),
+    )
+
+    def validate_score(self, value):
+        if value < 1 or value > 10:
+            raise serializers.ValidationError('Оценка должна быть от 1 до 10')
+        return value
 
     class Meta:
         model = Review
-        fields = '__all__'
+        exclude = ('title',)
         read_only_fields = ('title',)
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = SlugRelatedField(slug_field='username', read_only=True)
+    author = SlugRelatedField(
+        slug_field='username',
+        read_only=True,
+        default=serializers.CurrentUserDefault(),
+    )
 
     class Meta:
         model = Comment
