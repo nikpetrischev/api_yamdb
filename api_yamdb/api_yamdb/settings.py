@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -56,30 +57,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'api_yamdb.wsgi.application'
 
-DEFAULT_AUTO_FIELD='django.db.models.AutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 AUTH_USER_MODEL = 'user.CustomUser'
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_PERMISSION_CLASSES': [
-    #     'rest_framework.permissions.IsAuthenticated',
-    #             # rest_framework.permissions.IsAuthenticated
-    #             # rest_framework_simplejwt.authentication.JWTAuthentication
-    # ],
-
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ]
-} 
+}
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'
 EMAIL_PORT = 587
-# or 587 or 465
+# 587 or 465
 EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = 'cabugold288@yandex.ru'
-EMAIL_HOST_PASSWORD = 'zwbqgekawtqjnpxj'
+dotenv_email_host_password = os.getenv('ENV_EMAIL_HOST_PASSWORD')
+EMAIL_HOST_PASSWORD = dotenv_email_host_password
 
 EMAIL_SERVER = EMAIL_HOST_USER
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
