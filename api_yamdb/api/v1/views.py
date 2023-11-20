@@ -1,16 +1,19 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, viewsets
+from rest_framework import filters, viewsets, status
 from rest_framework.mixins import (
     CreateModelMixin,
     ListModelMixin,
     RetrieveModelMixin,
 )
+from rest_framework.response import Response
 
 # Костыль для тестирования
 from rest_framework.permissions import AllowAny
 from reviews.models import Category, Genre, Review, Title
 
-from .permissions import CommentPermission, ReviewPermission
+# from .permissions import (
+#     IsAdminOrModeratorOrAuthorOrReadOnly,
+# )
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -18,6 +21,20 @@ from .serializers import (
     ReviewSerializer,
     TitleSerializer,
 )
+
+
+class CommentReviewBase(viewsets.ModelViewSet):
+    def get_review(self):
+        review_id = self.kwargs['review_id']
+        review = get_object_or_404(Review, pk=review_id)
+        return review
+
+    def update(self, request, *args, **kwargs):
+        if request.method == 'PUT':
+            return Response(
+                status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
+        return super().update(request, *args, **kwargs)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -76,13 +93,12 @@ class CategoryViewSet(
     search_fields = ['name']
 
 
-class ReviewViewSet(viewsets.ModelViewSet):
+class ReviewViewSet(CommentReviewBase):
     serializer_class = ReviewSerializer
-    # permission_classes = (ReviewPermission,)
-    # FIXME: заглушка, убрать как будут юзеры
     permission_classes = [
         AllowAny,
     ]
+    # permission_classes = (IsAdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_queryset(self):
         queryset = Review.objects.filter(title=self.kwargs['title_id'])
@@ -93,20 +109,19 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, title=title)
 
 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentViewSet(CommentReviewBase):
     serializer_class = CommentSerializer
-    # permission_classes = (CommentPermission,)
-    # FIXME: заглушка, убрать как будут юзеры
     permission_classes = [
         AllowAny,
     ]
+    # permission_classes = (IsAdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_queryset(self):
-        review = get_object_or_404(Review, pk=self.kwargs['review_id'])
+        review = self.get_review()
         queryset = review.comments.all()
         return queryset
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, pk=self.kwargs['title_id'])
-        review = get_object_or_404(Review, pk=self.kwargs['review_id'])
+        review = self.get_review()
         serializer.save(author=self.request.user, title=title, review=review)
