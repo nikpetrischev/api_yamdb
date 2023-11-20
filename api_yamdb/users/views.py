@@ -1,14 +1,19 @@
 from random import randint
 import http
 
+from rest_framework import filters, permissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.decorators import action
 from django.db import IntegrityError
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .serializers import SignUpSerializer, TokenSerializer, UserSerializer
 from .permissions import IsAdmin
@@ -83,4 +88,43 @@ class TokenAPIView(APIView):
 class UserModelViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdmin,)
+    permission_classes = [IsAdmin, permissions.IsAuthenticated]
+    filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
+    search_field = ('username', )
+    lookup_field = 'username'
+
+    def get_queryset(self):
+        username = self.kwargs.get('username')
+        if username:
+            return User.objects.filter(username=username)
+        return User.objects.all()
+    
+
+
+    # @action(methods=['GET', 'PATCH'],
+    #         detail=False,
+    #         permission_classes=[permissions.IsAuthenticated])
+    # def me(self, request):
+    #     serializer = UserSerializer(request.user)
+    #     if request.method == 'PATCH':
+    #         serializer = UserSerializer(
+    #             request.user,
+    #             data=request.data,
+    #             partial=True)
+    #         serializer.is_valid(raise_exception=True)
+    #         serializer.save(role=request.user.role)
+    #     return Response(serializer.data)
+
+class QurentUserAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+    
+    def patch(self, request):
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(role=request.user.role)
+        # Хотя если используем partial=True - надо ли сохранять роль?
+        return Response(serializer.data)
+    
