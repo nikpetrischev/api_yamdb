@@ -22,8 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'djoser',
-    'user',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -59,11 +58,11 @@ WSGI_APPLICATION = 'api_yamdb.wsgi.application'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
-AUTH_USER_MODEL = 'user.CustomUser'
+AUTH_USER_MODEL = 'users.CustomUser'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ]
 }
 
@@ -74,8 +73,10 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = 'cabugold288@yandex.ru'
-dotenv_email_host_password = os.getenv('ENV_EMAIL_HOST_PASSWORD')
-EMAIL_HOST_PASSWORD = dotenv_email_host_password
+DOTENV_EMAIL_HOST_PASSWORRD = os.getenv('ENV_EMAIL_HOST_PASSWORD')
+
+# os.getenv('ENV_EMAIL_HOST_PASSWORD')
+EMAIL_HOST_PASSWORD = DOTENV_EMAIL_HOST_PASSWORRD
 
 EMAIL_SERVER = EMAIL_HOST_USER
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
