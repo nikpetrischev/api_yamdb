@@ -3,13 +3,15 @@ import http
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 from django.db import IntegrityError
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 
-from .serializers import SignUpSerializer, TokenSerializer
+from .serializers import SignUpSerializer, TokenSerializer, UserSerializer
+from .permissions import IsAdmin
 
 
 User = get_user_model()
@@ -54,11 +56,10 @@ class SignUpAPIView(APIView):
 class TokenAPIView(APIView):
     def post(self, *args, **kwargs):
         serializer = TokenSerializer(data=self.request.data)
-        serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
 
         username = serializer.validated_data.get('username')
         confirmation_code = serializer.validated_data.get('confirmation_code')
-        user = User.objects.get(username=username)
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
@@ -77,3 +78,9 @@ class TokenAPIView(APIView):
             {'confirmation_code': ['Неверный токен!']},
             status=http.HTTPStatus.BAD_REQUEST
         )
+
+
+class UserModelViewSet(ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (IsAdmin,)
