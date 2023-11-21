@@ -1,11 +1,9 @@
-from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from .mixins import NameAndSlugAbstract
+from users.models import CustomUser
 
-# FIXME: заглушка, убрать как будут юзеры
-User = get_user_model()
+from .mixins import NameAndSlugAbstract
 
 
 class Category(NameAndSlugAbstract):
@@ -64,7 +62,7 @@ class TitleGenre(models.Model):
 class Review(models.Model):
     text = models.TextField(verbose_name='Текст отзыва')
     author = models.ForeignKey(
-        User,
+        CustomUser,
         on_delete=models.CASCADE,
         related_name='reviews',
         verbose_name='Автор отзыва',
@@ -95,7 +93,7 @@ class Review(models.Model):
 class Comment(models.Model):
     text = models.TextField(verbose_name='Текст комментария')
     author = models.ForeignKey(
-        User,
+        CustomUser,
         on_delete=models.CASCADE,
         related_name='comments',
         verbose_name='Автор комментария',
