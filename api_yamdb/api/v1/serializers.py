@@ -43,14 +43,17 @@ class TitleSerializer(serializers.ModelSerializer):
         allow_blank=True,
         required=False,
     )
-    genre = GenreSerializer(
+    genre = SlugRelatedField(
+        allow_null=True,
         many=True,
+        queryset=Genre.objects.all(),
         read_only=False,
-        allow_null=True,
+        slug_field='slug',
     )
-    category = serializers.PrimaryKeyRelatedField(
+    category = serializers.SlugRelatedField(
         allow_null=True,
         read_only=False,
+        slug_field='slug',
         queryset=Category.objects.all(),
     )
     rating = serializers.SerializerMethodField()
@@ -65,11 +68,27 @@ class TitleSerializer(serializers.ModelSerializer):
         title = Title.objects.create(**validated_data)
 
         for genre in genres:
-            # ToDo: Пока сомневаюсь, так или через exists с возможной ошибкой
-            current_genre, status = Genre.objects.get_or_create(**genre)
-            TitleGenre.objects.create(title=title, genre=current_genre)
+            TitleGenre.objects.create(title=title, genre=genre)
 
         return title
+
+    def validate_genre(self, value):
+        if not value:
+            return value
+        genres = Genre.objects.all()
+        for genre in value:
+            if genre not in genres:
+                raise serializers.ValidationError(
+                    f'Жанр {genre} не найден в базе',
+                )
+        return value
+
+    def validate_category(self, value):
+        if value and value not in Category.objects.all():
+            raise serializers.ValidationError(
+                f'Категория {value} не найдена в базе',
+            )
+        return value
 
     def validate_year(self, value):
         if value > dt.now().year:

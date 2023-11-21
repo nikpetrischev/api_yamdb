@@ -4,13 +4,14 @@ from rest_framework.mixins import (
     CreateModelMixin,
     ListModelMixin,
     RetrieveModelMixin,
+    DestroyModelMixin,
 )
 
 # Костыль для тестирования
 from rest_framework.permissions import AllowAny
 from reviews.models import Category, Genre, Review, Title
 
-from .permissions import CommentPermission, ReviewPermission
+# from .permissions import CommentPermission, ReviewPermission
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -47,6 +48,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 class GenreViewSet(
     viewsets.GenericViewSet,
     CreateModelMixin,
+    DestroyModelMixin,
     RetrieveModelMixin,
     ListModelMixin,
 ):
@@ -63,6 +65,7 @@ class GenreViewSet(
 class CategoryViewSet(
     viewsets.GenericViewSet,
     CreateModelMixin,
+    DestroyModelMixin,
     RetrieveModelMixin,
     ListModelMixin,
 ):
