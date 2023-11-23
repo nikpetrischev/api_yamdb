@@ -3,7 +3,6 @@ import os
 from datetime import timedelta
 
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -24,7 +23,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'rest_framework',
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
     'django_filters',
+
     'users.apps.UsersConfig',
     'api.apps.ApiConfig',
     'reviews.apps.ReviewsConfig',
@@ -88,8 +92,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'cabugold288@yandex.ru'
 DOTENV_EMAIL_HOST_PASSWORRD = os.getenv('ENV_EMAIL_HOST_PASSWORD')
 
-# os.getenv('ENV_EMAIL_HOST_PASSWORD')
-EMAIL_HOST_PASSWORD = 'zwbqgekawtqjnpxj'
+EMAIL_HOST_PASSWORD = DOTENV_EMAIL_HOST_PASSWORRD
 
 EMAIL_SERVER = EMAIL_HOST_USER
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
@@ -147,8 +150,3 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
-
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
-}
