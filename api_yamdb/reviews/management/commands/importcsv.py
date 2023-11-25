@@ -1,6 +1,6 @@
-from typing import Any, Union, TypeVar
 import csv
 import os
+from typing import Any, Union, TypeVar
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -17,6 +17,22 @@ from reviews.models import (
 
 
 user = get_user_model()
+
+IMPORT_PARAMS_TUPLE: tuple[
+    tuple[
+        str,
+        TypeVar('Model'),
+        dict[str, TypeVar('Model')],
+    ],
+] = (
+    (os.path.join(CSV_FILES_DIR, 'category.csv'), Category, {}),
+    (os.path.join(CSV_FILES_DIR, 'genre.csv'), Genre, {}),
+    (os.path.join(CSV_FILES_DIR, 'users.csv'), user, {}),
+    (os.path.join(CSV_FILES_DIR, 'titles.csv'), Title, {'category': Category}),
+    (os.path.join(CSV_FILES_DIR, 'genre_title.csv'), Title.genre.through, {}),
+    (os.path.join(CSV_FILES_DIR, 'review.csv'), Review, {'author': user}),
+    (os.path.join(CSV_FILES_DIR, 'comments.csv'), Comment, {'author': user}),
+)
 
 
 class Command(BaseCommand):
@@ -51,39 +67,6 @@ class Command(BaseCommand):
                 model(**model_dict).save()
 
     def handle(self, *args: Any, **options: Any) -> Union[str, None]:
-        self.csv_import(
-            os.path.join(CSV_FILES_DIR, 'category.csv'),
-            Category,
-            {},
-        )
-        self.csv_import(
-            os.path.join(CSV_FILES_DIR, 'genre.csv'),
-            Genre,
-            {},
-        )
-        self.csv_import(
-            os.path.join(CSV_FILES_DIR, 'users.csv'),
-            user,
-            {},
-        )
-
-        self.csv_import(
-            os.path.join(CSV_FILES_DIR, 'titles.csv'),
-            Title,
-            {'category': Category},
-        )
-        self.csv_import(
-            os.path.join(CSV_FILES_DIR, 'genre_title.csv'),
-            Title.genre.through,
-            {},
-        )
-        self.csv_import(
-            os.path.join(CSV_FILES_DIR, 'review.csv'),
-            Review,
-            {'author': user},
-        )
-        self.csv_import(
-            os.path.join(CSV_FILES_DIR, 'comments.csv'),
-            Comment,
-            {'author': user},
-        )
+        for (csv_path, model,
+             model_related_fields) in IMPORT_PARAMS_TUPLE:
+            self.csv_import(csv_path, model, model_related_fields)

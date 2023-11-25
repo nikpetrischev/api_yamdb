@@ -3,12 +3,16 @@ from datetime import datetime as dt
 
 from django.contrib.auth import get_user_model
 from django.db.models import Avg
+
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
-from reviews.models import Category, Comment, Genre, Review, Title, TitleGenre
 from rest_framework.exceptions import ValidationError
 
+from reviews.models import Category, Comment, Genre, Review, Title
+
+
 User = get_user_model()
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

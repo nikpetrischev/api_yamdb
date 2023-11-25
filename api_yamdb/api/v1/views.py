@@ -1,5 +1,5 @@
-from random import randint
 import http
+from random import randint
 
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
@@ -19,15 +19,10 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.decorators import action
 
-# Костыль для тестирования
-from rest_framework.permissions import AllowAny
 from reviews.models import Category, Genre, Review, Title
 
-# from .permissions import (
-#     IsAdminOrModeratorOrAuthorOrReadOnly,
-# )
 from .filters import TitleFilter
-# from .permissions import IsAdmin
+from .permissions import IsAdmin, IsAdminOrAnon
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -39,7 +34,7 @@ from .serializers import (
     TokenSerializer,
     UserSerializer,
 )
-from .permissions import IsAdmin
+
 
 User = get_user_model()
 
@@ -127,17 +122,23 @@ class UserModelViewSet(ModelViewSet):
             return User.objects.filter(username=username)
         return User.objects.all()
 
-    @action(detail=False,
-            url_path='me',
-            methods=['get', 'patch'],
-            permission_classes=[permissions.IsAuthenticated]
+    @action(
+        detail=False,
+        url_path='me',
+        methods=['get', 'patch'],
+        permission_classes=[permissions.IsAuthenticated],
     )
     def me(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UserSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+        )
         serializer.is_valid(raise_exception=True)
         if request.method == 'PATCH':
             serializer.save(role=request.user.role)
         return Response(serializer.data)
+
 
 class CommentReviewBase(viewsets.ModelViewSet):
     def get_review(self):
@@ -157,13 +158,10 @@ class TitleViewSet(viewsets.ModelViewSet):
     _title = None
 
     # Кверисет сортируем, чтобы пагинация давала стабильный результат
-    # queryset = (Title.objects.all().order_by('id')
-    #             .select_related('category').prefetch_related('genre'))
-    queryset = Title.objects.all().order_by('id')
+    queryset = (Title.objects.all().order_by('id')
+                .select_related('category').prefetch_related('genre'))
     filterset_class = TitleFilter
-    permission_classes = [
-        AllowAny,
-    ]
+    permission_classes = [IsAdminOrAnon]
 
     def get_serializer_class(self):
         if self.request.method in ['GET']:
@@ -193,10 +191,7 @@ class GenreViewSet(
     queryset = Genre.objects.all().order_by('id')
     serializer_class = GenreSerializer
     lookup_field = 'slug'
-    permission_classes = [
-        # IsAdmin,
-        AllowAny,
-    ]
+    permission_classes = [IsAdminOrAnon]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
@@ -210,19 +205,16 @@ class CategoryViewSet(
     queryset = Category.objects.all().order_by('id')
     serializer_class = CategorySerializer
     lookup_field = 'slug'
-    permission_classes = [
-        # IsAdmin,
-        AllowAny,
-    ]
+    permission_classes = [IsAdminOrAnon]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
 
 class ReviewViewSet(CommentReviewBase):
     serializer_class = ReviewSerializer
-    permission_classes = [
-        AllowAny,
-    ]
+    # permission_classes = [
+    #     AllowAny,
+    # ]
     # permission_classes = (IsAdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_queryset(self):
@@ -236,9 +228,9 @@ class ReviewViewSet(CommentReviewBase):
 
 class CommentViewSet(CommentReviewBase):
     serializer_class = CommentSerializer
-    permission_classes = [
-        AllowAny,
-    ]
+    # permission_classes = [
+    #     AllowAny,
+    # ]
     # permission_classes = (IsAdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_queryset(self):
