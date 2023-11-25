@@ -9,9 +9,8 @@ class NameAndSlugAbstract(models.Model):
     slug = models.SlugField(
         verbose_name='Слаг',
         unique=True,
-        blank=False,
-        null=False,
+        max_length=50,
     )
 
     def __str__(self) -> str:
-        return self.name
+        return self.slug

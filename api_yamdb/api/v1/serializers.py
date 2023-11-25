@@ -1,17 +1,17 @@
+import re
 from datetime import datetime as dt
 
 from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
-from reviews.models import Category, Comment, Genre, Review, Title, TitleGenre
+from reviews.models import Category, Comment, Genre, Review, Title
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    slug = serializers.SlugField()
 
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
     def validate_slug(self, value):
@@ -19,15 +19,22 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Поле slug должно быть уникальным',
             )
+        if not re.match('^[-a-zA-Z0-9_]+$', value):
+            raise serializers.ValidationError(
+                'Поле slug должно соответствовать патерну ^[-a-zA-Z0-9_]+$',
+            )
+        if len(value) > 50:
+            raise serializers.ValidationError(
+                'Длина слага не может превышать 50 символов'
+            )
         return value
 
 
 class GenreSerializer(serializers.ModelSerializer):
-    slug = serializers.SlugField()
 
     class Meta:
         model = Genre
-        fields = '__all__'
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
     def validate_slug(self, value):
@@ -35,42 +42,50 @@ class GenreSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Поле slug должно быть уникальным',
             )
+        if not re.match('^[-a-zA-Z0-9_]+$', value):
+            raise serializers.ValidationError(
+                'Поле slug должно соответствовать патерну ^[-a-zA-Z0-9_]+$',
+            )
+        if len(value) > 50:
+            raise serializers.ValidationError(
+                'Длина слага не может превышать 50 символов'
+            )
         return value
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    decription = serializers.CharField(
-        allow_blank=True,
-        required=False,
-    )
-    genre = SlugRelatedField(
-        allow_null=True,
-        many=True,
-        queryset=Genre.objects.all(),
-        read_only=False,
-        slug_field='slug',
-    )
-    category = serializers.SlugRelatedField(
-        allow_null=True,
-        read_only=False,
-        slug_field='slug',
-        queryset=Category.objects.all(),
-    )
-    rating = serializers.SerializerMethodField()
+class BaseTitleSerializer(serializers.ModelSerializer):
+    rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Title
         fields = '__all__'
 
-    def create(self, validated_data):
-        genres = validated_data.pop('genre')
+    def get_rating(self, obj):
+        reviews = obj.reviews.all()
+        if reviews.exists():
+            return round(reviews.aggregate(Avg('score')).get('score__avg'))
+        return None
 
-        title = Title.objects.create(**validated_data)
 
-        for genre in genres:
-            TitleGenre.objects.create(title=title, genre=genre)
+class TitleReadSerializer(BaseTitleSerializer):
+    genre = GenreSerializer(many=True)
+    category = CategorySerializer()
 
-        return title
+
+class TitleWriteSerializer(BaseTitleSerializer):
+    description = serializers.CharField(
+        allow_blank=True,
+        required=False,
+    )
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all(),
+    )
+    genre = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Genre.objects.all(),
+        many=True,
+    )
 
     def validate_genre(self, value):
         if not value:
@@ -97,11 +112,8 @@ class TitleSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def get_rating(self, obj):
-        reviews = obj.reviews.all()
-        if reviews.exists():
-            return round(reviews.aggregate(Avg('score')).get('score__avg'))
-        return None
+    def to_representation(self, instance):
+        return TitleReadSerializer(instance).data
 
 
 class ReviewSerializer(serializers.ModelSerializer):

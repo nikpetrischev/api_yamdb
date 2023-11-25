@@ -1,9 +1,10 @@
+from http import HTTPStatus
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets, status
 from rest_framework.mixins import (
     CreateModelMixin,
     ListModelMixin,
-    RetrieveModelMixin,
     DestroyModelMixin,
 )
 from rest_framework.response import Response
@@ -12,15 +13,18 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from reviews.models import Category, Genre, Review, Title
 
-from .permissions import (
-    IsAdminOrModeratorOrAuthorOrReadOnly,
-)
+# from .permissions import (
+#     IsAdminOrModeratorOrAuthorOrReadOnly,
+# )
+from .filters import TitleFilter
+# from .permissions import IsAdmin
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
     ReviewSerializer,
-    TitleSerializer,
+    TitleReadSerializer,
+    TitleWriteSerializer,
 )
 
 
@@ -42,18 +46,18 @@ class TitleViewSet(viewsets.ModelViewSet):
     _title = None
 
     # Кверисет сортируем, чтобы пагинация давала стабильный результат
+    # queryset = (Title.objects.all().order_by('id')
+    #             .select_related('category').prefetch_related('genre'))
     queryset = Title.objects.all().order_by('id')
-    serializer_class = TitleSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = [
-        'category__slug',
-        'genre__slug',
-        'name',
-        'year',
-    ]
+    filterset_class = TitleFilter
     permission_classes = [
         AllowAny,
     ]
+
+    def get_serializer_class(self):
+        if self.request.method in ['GET']:
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
     # Запоминаем тайтл, чтоб каждый раз не обращаться запросом к БД
     def get_object(self):
@@ -61,18 +65,25 @@ class TitleViewSet(viewsets.ModelViewSet):
             self._title = super().get_object()
         return self._title
 
+    def update(self, request, *args, **kwargs):
+        if request.method == 'PUT':
+            return Response(
+                status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
+        return super().update(request, *args, **kwargs)
+
 
 class GenreViewSet(
     viewsets.GenericViewSet,
     CreateModelMixin,
     DestroyModelMixin,
-    RetrieveModelMixin,
     ListModelMixin,
 ):
     queryset = Genre.objects.all().order_by('id')
     serializer_class = GenreSerializer
     lookup_field = 'slug'
     permission_classes = [
+        # IsAdmin,
         AllowAny,
     ]
     filter_backends = [filters.SearchFilter]
@@ -83,13 +94,13 @@ class CategoryViewSet(
     viewsets.GenericViewSet,
     CreateModelMixin,
     DestroyModelMixin,
-    RetrieveModelMixin,
     ListModelMixin,
 ):
     queryset = Category.objects.all().order_by('id')
     serializer_class = CategorySerializer
     lookup_field = 'slug'
     permission_classes = [
+        # IsAdmin,
         AllowAny,
     ]
     filter_backends = [filters.SearchFilter]
