@@ -78,6 +78,11 @@ class Review(models.Model):
     )
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'], name='unique_title_author'
+            )
+        ]
         verbose_name = "отзыв"
         verbose_name_plural = "Отзыва"
 
@@ -94,12 +99,6 @@ class Comment(models.Model):
         auto_now_add=True,
         verbose_name='Дата и время комментария',
     )
-    # title = models.ForeignKey(
-    #     Title,
-    #     on_delete=models.CASCADE,
-    #     related_name='comments',
-    #     verbose_name='Произведение',
-    # )
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
