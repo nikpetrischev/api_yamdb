@@ -8,12 +8,9 @@ from .views import (
     TitleViewSet,
     GenreViewSet,
     CategoryViewSet,
-)
-from users.views import (
+    UserModelViewSet,
     SignUpAPIView,
     TokenAPIView,
-    UserModelViewSet,
-    QurentUserAPIView,
 )
 
 
@@ -40,6 +37,5 @@ router_v1.register(
 urlpatterns = [
     path('auth/signup/', SignUpAPIView.as_view()),
     path('auth/token/', TokenAPIView.as_view()),
-    path('users/me/', QurentUserAPIView.as_view()),
     path('', include(router_v1.urls)),
 ]

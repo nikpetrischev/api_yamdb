@@ -1,10 +1,45 @@
 import re
 from datetime import datetime as dt
 
+from django.contrib.auth import get_user_model
 from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
-from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.models import Category, Comment, Genre, Review, Title, TitleGenre
+from rest_framework.exceptions import ValidationError
+
+User = get_user_model()
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "username", "email", "first_name",
+            "last_name", "bio", "role"
+        )
+
+
+class SignUpSerializer(serializers.ModelSerializer):
+    username = serializers.RegexField(max_length=150, regex=r'^[\w.@+-]+\Z')
+    email = serializers.EmailField(max_length=254)
+
+    class Meta:
+        model = User
+        fields = ("username", "email")
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise ValidationError('Недопустимое имя пользователя!')
+        return value
+
+
+class TokenSerializer(serializers.ModelSerializer):
+    confirmation_code = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
+
+    class Meta:
+        model = User
+        fields = ("username", "confirmation_code")
 
 
 class CategorySerializer(serializers.ModelSerializer):
