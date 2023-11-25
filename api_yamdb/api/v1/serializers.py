@@ -7,6 +7,8 @@ from django.db.models import Avg
 from rest_framework import serializers, validators
 from rest_framework.relations import SlugRelatedField
 from rest_framework.exceptions import ValidationError
+
+from api_yamdb.settings import MAX_SLUG_LENGTH
 from reviews.models import Category, Comment, Genre, Review, Title
 from .utils import MAX_SCORE_VALUE, MIN_SCORE_VALUE
 
@@ -50,51 +52,46 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = ("username", "confirmation_code")
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class BaseCatGenreSerializer(serializers.ModelSerializer):
+    """Общая часть сериалайзера для категорий и жанров."""
+
     class Meta:
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+
+    def validate_slug(self, value):
+        if self.Meta.model.objects.filter(slug=value).exists():
+            raise serializers.ValidationError(
+                'Поле slug должно быть уникальным',
+            )
+
+        if not re.match('^[-a-zA-Z0-9_]+$', value):
+            raise serializers.ValidationError(
+                'Поле slug должно соответствовать патерну ^[-a-zA-Z0-9_]+$',
+            )
+
+        if len(value) > MAX_SLUG_LENGTH:
+            raise serializers.ValidationError(
+                'Длина слага не может превышать 50 символов'
+            )
+
+        return value
+
+
+class CategorySerializer(BaseCatGenreSerializer):
+
+    class Meta(BaseCatGenreSerializer.Meta):
         model = Category
-        fields = ('name', 'slug')
-        lookup_field = 'slug'
-
-    def validate_slug(self, value):
-        if Category.objects.filter(slug=value).exists():
-            raise serializers.ValidationError(
-                'Поле slug должно быть уникальным',
-            )
-        if not re.match('^[-a-zA-Z0-9_]+$', value):
-            raise serializers.ValidationError(
-                'Поле slug должно соответствовать патерну ^[-a-zA-Z0-9_]+$',
-            )
-        if len(value) > 50:
-            raise serializers.ValidationError(
-                'Длина слага не может превышать 50 символов'
-            )
-        return value
 
 
-class GenreSerializer(serializers.ModelSerializer):
-    class Meta:
+class GenreSerializer(BaseCatGenreSerializer):
+
+    class Meta(BaseCatGenreSerializer.Meta):
         model = Genre
-        fields = ('name', 'slug')
-        lookup_field = 'slug'
-
-    def validate_slug(self, value):
-        if Genre.objects.filter(slug=value).exists():
-            raise serializers.ValidationError(
-                'Поле slug должно быть уникальным',
-            )
-        if not re.match('^[-a-zA-Z0-9_]+$', value):
-            raise serializers.ValidationError(
-                'Поле slug должно соответствовать патерну ^[-a-zA-Z0-9_]+$',
-            )
-        if len(value) > 50:
-            raise serializers.ValidationError(
-                'Длина слага не может превышать 50 символов'
-            )
-        return value
 
 
 class BaseTitleSerializer(serializers.ModelSerializer):
+    """Основа для сериалайзера модели произведений."""
     rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -109,11 +106,13 @@ class BaseTitleSerializer(serializers.ModelSerializer):
 
 
 class TitleReadSerializer(BaseTitleSerializer):
+    """Сериалайзер для рид-онли части модели произведений."""
     genre = GenreSerializer(many=True)
     category = CategorySerializer()
 
 
 class TitleWriteSerializer(BaseTitleSerializer):
+    """Сериалайзер для изменяемой части модели произведений."""
     description = serializers.CharField(
         allow_blank=True,
         required=False,

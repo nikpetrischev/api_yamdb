@@ -154,8 +154,6 @@ class Test04TitleAPI:
         }
         admin_client.post(self.TITLES_URL, data=data)
 
-        # breakpoint()
-
         response = admin_client.get(
             f'{self.TITLES_URL}?genre={genres[1]["slug"]}'
         )
