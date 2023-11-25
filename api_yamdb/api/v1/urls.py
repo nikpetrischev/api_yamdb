@@ -29,7 +29,7 @@ router_v1.register(r'titles', TitleViewSet)
 router_v1.register(r'categories', CategoryViewSet)
 router_v1.register(r'genres', GenreViewSet)
 router_v1.register(
-    'users',
+    r'users',
     UserModelViewSet,
     basename='users'
 )

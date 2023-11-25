@@ -1,13 +1,18 @@
+import re
 from datetime import datetime as dt
 
 from django.contrib.auth import get_user_model
 from django.db.models import Avg
+
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
-from reviews.models import Category, Comment, Genre, Review, Title, TitleGenre
 from rest_framework.exceptions import ValidationError
 
+from reviews.models import Category, Comment, Genre, Review, Title
+
+
 User = get_user_model()
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,11 +47,10 @@ class TokenSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    slug = serializers.SlugField()
 
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
     def validate_slug(self, value):
@@ -54,15 +58,22 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Поле slug должно быть уникальным',
             )
+        if not re.match('^[-a-zA-Z0-9_]+$', value):
+            raise serializers.ValidationError(
+                'Поле slug должно соответствовать патерну ^[-a-zA-Z0-9_]+$',
+            )
+        if len(value) > 50:
+            raise serializers.ValidationError(
+                'Длина слага не может превышать 50 символов'
+            )
         return value
 
 
 class GenreSerializer(serializers.ModelSerializer):
-    slug = serializers.SlugField()
 
     class Meta:
         model = Genre
-        fields = '__all__'
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
     def validate_slug(self, value):
@@ -70,41 +81,68 @@ class GenreSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Поле slug должно быть уникальным',
             )
+        if not re.match('^[-a-zA-Z0-9_]+$', value):
+            raise serializers.ValidationError(
+                'Поле slug должно соответствовать патерну ^[-a-zA-Z0-9_]+$',
+            )
+        if len(value) > 50:
+            raise serializers.ValidationError(
+                'Длина слага не может превышать 50 символов'
+            )
         return value
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    decription = serializers.CharField(
-        allow_blank=True,
-        required=False,
-    )
-    genre = GenreSerializer(
-        many=True,
-        read_only=False,
-        allow_null=True,
-    )
-    category = serializers.PrimaryKeyRelatedField(
-        allow_null=True,
-        read_only=False,
-        queryset=Category.objects.all(),
-    )
-    rating = serializers.SerializerMethodField()
+class BaseTitleSerializer(serializers.ModelSerializer):
+    rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Title
         fields = '__all__'
 
-    def create(self, validated_data):
-        genres = validated_data.pop('genre')
+    def get_rating(self, obj):
+        reviews = obj.reviews.all()
+        if reviews.exists():
+            return round(reviews.aggregate(Avg('score')).get('score__avg'))
+        return None
 
-        title = Title.objects.create(**validated_data)
 
-        for genre in genres:
-            # ToDo: Пока сомневаюсь, так или через exists с возможной ошибкой
-            current_genre, status = Genre.objects.get_or_create(**genre)
-            TitleGenre.objects.create(title=title, genre=current_genre)
+class TitleReadSerializer(BaseTitleSerializer):
+    genre = GenreSerializer(many=True)
+    category = CategorySerializer()
 
-        return title
+
+class TitleWriteSerializer(BaseTitleSerializer):
+    description = serializers.CharField(
+        allow_blank=True,
+        required=False,
+    )
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all(),
+    )
+    genre = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Genre.objects.all(),
+        many=True,
+    )
+
+    def validate_genre(self, value):
+        if not value:
+            return value
+        genres = Genre.objects.all()
+        for genre in value:
+            if genre not in genres:
+                raise serializers.ValidationError(
+                    f'Жанр {genre} не найден в базе',
+                )
+        return value
+
+    def validate_category(self, value):
+        if value and value not in Category.objects.all():
+            raise serializers.ValidationError(
+                f'Категория {value} не найдена в базе',
+            )
+        return value
 
     def validate_year(self, value):
         if value > dt.now().year:
@@ -113,11 +151,8 @@ class TitleSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def get_rating(self, obj):
-        reviews = obj.reviews.all()
-        if reviews.exists():
-            return round(reviews.aggregate(Avg('score')).get('score__avg'))
-        return None
+    def to_representation(self, instance):
+        return TitleReadSerializer(instance).data
 
 
 class ReviewSerializer(serializers.ModelSerializer):

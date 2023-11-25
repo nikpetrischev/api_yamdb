@@ -1,5 +1,5 @@
-from random import randint
 import http
+from random import randint
 
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
@@ -10,7 +10,7 @@ from rest_framework import filters, viewsets, status, permissions
 from rest_framework.mixins import (
     CreateModelMixin,
     ListModelMixin,
-    RetrieveModelMixin,
+    DestroyModelMixin,
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,24 +19,22 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.decorators import action
 
-# Костыль для тестирования
-from rest_framework.permissions import AllowAny
 from reviews.models import Category, Genre, Review, Title
 
-# from .permissions import (
-#     IsAdminOrModeratorOrAuthorOrReadOnly,
-# )
+from .filters import TitleFilter
+from .permissions import IsAdmin, IsAdminOrAnon
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
     ReviewSerializer,
-    TitleSerializer,
+    TitleReadSerializer,
+    TitleWriteSerializer,
     SignUpSerializer,
     TokenSerializer,
     UserSerializer,
 )
-from .permissions import IsAdmin
+
 
 User = get_user_model()
 
@@ -124,17 +122,23 @@ class UserModelViewSet(ModelViewSet):
             return User.objects.filter(username=username)
         return User.objects.all()
 
-    @action(detail=False,
-            url_path='me',
-            methods=['get', 'patch'],
-            permission_classes=[permissions.IsAuthenticated]
+    @action(
+        detail=False,
+        url_path='me',
+        methods=['get', 'patch'],
+        permission_classes=[permissions.IsAuthenticated],
     )
     def me(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UserSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+        )
         serializer.is_valid(raise_exception=True)
         if request.method == 'PATCH':
             serializer.save(role=request.user.role)
         return Response(serializer.data)
+
 
 class CommentReviewBase(viewsets.ModelViewSet):
     def get_review(self):
@@ -154,18 +158,15 @@ class TitleViewSet(viewsets.ModelViewSet):
     _title = None
 
     # Кверисет сортируем, чтобы пагинация давала стабильный результат
-    queryset = Title.objects.all().order_by('id')
-    serializer_class = TitleSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = [
-        'category__slug',
-        'genre__slug',
-        'name',
-        'year',
-    ]
-    permission_classes = [
-        AllowAny,
-    ]
+    queryset = (Title.objects.all().order_by('id')
+                .select_related('category').prefetch_related('genre'))
+    filterset_class = TitleFilter
+    permission_classes = [IsAdminOrAnon]
+
+    def get_serializer_class(self):
+        if self.request.method in ['GET']:
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
     # Запоминаем тайтл, чтоб каждый раз не обращаться запросом к БД
     def get_object(self):
@@ -173,19 +174,24 @@ class TitleViewSet(viewsets.ModelViewSet):
             self._title = super().get_object()
         return self._title
 
+    def update(self, request, *args, **kwargs):
+        if request.method == 'PUT':
+            return Response(
+                status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
+        return super().update(request, *args, **kwargs)
+
 
 class GenreViewSet(
     viewsets.GenericViewSet,
     CreateModelMixin,
-    RetrieveModelMixin,
+    DestroyModelMixin,
     ListModelMixin,
 ):
     queryset = Genre.objects.all().order_by('id')
     serializer_class = GenreSerializer
     lookup_field = 'slug'
-    permission_classes = [
-        AllowAny,
-    ]
+    permission_classes = [IsAdminOrAnon]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
@@ -193,24 +199,22 @@ class GenreViewSet(
 class CategoryViewSet(
     viewsets.GenericViewSet,
     CreateModelMixin,
-    RetrieveModelMixin,
+    DestroyModelMixin,
     ListModelMixin,
 ):
     queryset = Category.objects.all().order_by('id')
     serializer_class = CategorySerializer
     lookup_field = 'slug'
-    permission_classes = [
-        AllowAny,
-    ]
+    permission_classes = [IsAdminOrAnon]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
 
 class ReviewViewSet(CommentReviewBase):
     serializer_class = ReviewSerializer
-    permission_classes = [
-        AllowAny,
-    ]
+    # permission_classes = [
+    #     AllowAny,
+    # ]
     # permission_classes = (IsAdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_queryset(self):
@@ -224,9 +228,9 @@ class ReviewViewSet(CommentReviewBase):
 
 class CommentViewSet(CommentReviewBase):
     serializer_class = CommentSerializer
-    permission_classes = [
-        AllowAny,
-    ]
+    # permission_classes = [
+    #     AllowAny,
+    # ]
     # permission_classes = (IsAdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_queryset(self):
