@@ -152,5 +152,3 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 
 CSV_FILES_DIR = BASE_DIR / 'static/data/'
-
-MAX_SLUG_LENGTH = 50

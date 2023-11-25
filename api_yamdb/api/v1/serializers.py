@@ -8,9 +8,8 @@ from rest_framework import serializers, validators
 from rest_framework.relations import SlugRelatedField
 from rest_framework.exceptions import ValidationError
 
-from api_yamdb.settings import MAX_SLUG_LENGTH
 from reviews.models import Category, Comment, Genre, Review, Title
-from .utils import MAX_SCORE_VALUE, MIN_SCORE_VALUE
+from .utils import MAX_SCORE_VALUE, MIN_SCORE_VALUE, MAX_SLUG_LENGTH
 
 
 User = get_user_model()
