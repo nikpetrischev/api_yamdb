@@ -67,8 +67,17 @@ class SignUpAPIView(APIView):
 
         '''Отправка письма'''
         SUBJECT = 'Токен'
+'''
+REVIEW
+Отправку письма стоит вынести в отдельную функцию и унести её в utils.py
+'''
         MESSAGE = f'Код: {confirmation_code}'
         FROM_EMAIL = 'cabugold288@yandex.ru'
+'''
+REVIEW
+Емейл отправителя должен быть задан константой, которая должна храниться в 
+settings.py
+'''
         RECIPIENT_LIST = [user.email]
 
         send_mail(
@@ -105,11 +114,19 @@ class TokenAPIView(APIView):
             )
         return Response(
             {'confirmation_code': ['Неверный токен!']},
+'''
+REVIEW
+Токен и код подтверждения - разные сущности. Нужно исправить сообщение
+'''
             status=http.HTTPStatus.BAD_REQUEST,
         )
 
 
 class UserModelViewSet(ModelViewSet):
+'''
+REVIEW
+Всю логику, связанную с юзером, нужно вынести в соответствующее приложение
+'''
     serializer_class = UserSerializer
     permission_classes = [
         IsAdmin,
@@ -124,6 +141,10 @@ class UserModelViewSet(ModelViewSet):
         if username:
             return User.objects.filter(username=username)
         return User.objects.all().order_by('id')
+'''
+REVIEW
+.all() можно не использовать, если это не единственный метод QuerySet
+'''
 
     @action(
         detail=False,
@@ -168,6 +189,14 @@ class TitleViewSet(viewsets.ModelViewSet):
         return self._title
 
     def update(self, request, *args, **kwargs):
+'''
+REVIEW
+Нужно собрать класс из нужных миксинов и дженериков, а не перекрывать 
+методы явным образом.
+Здесь есть вся необходимая информация (похожим образом сделано в 
+GenreViewSet)
+https://www.django-rest-framework.org/api-guide/generic-views/
+'''
         if request.method == 'PUT':
             return Response(
                 status=status.HTTP_405_METHOD_NOT_ALLOWED,
@@ -210,6 +239,10 @@ class CommentReviewBase(viewsets.ModelViewSet):
         return review
 
     def update(self, request, *args, **kwargs):
+'''
+REVIEW
+См выше
+'''
         if request.method == 'PUT':
             return Response(
                 status=status.HTTP_405_METHOD_NOT_ALLOWED,
