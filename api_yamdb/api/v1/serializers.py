@@ -1,36 +1,18 @@
+# Standart Library
 import re
-'''
-REVIEW
-PEP8:
-Импорты должны быть сгруппированы в следующем порядке:
-- импорты из стандартной библиотеки
-- импорты сторонних библиотек
-- импорты модулей текущего проекта
-Вставляйте пустую строку между каждой группой импортов.  
-Можно автоматизировать процесс расстановки импортов в правильном порядке 
-с помощью isort.
-https://pycqa.github.io/isort/
-По умолчанию isort расставляет все не по PEP8 если локальные модули 
-импортируются с помощью абсолютного пути. Он считает их third-party 
-модулями, наравне с django. 
-Здесь есть гайд, как настроить isort
-https://simpleisbetterthancomplex.com/packages/2016/10/08/isort.html
-После этого в консоли нужно написать
-isort --resolve-all-configs .
-А потом запустить isort
-'''
 from datetime import datetime as dt
-from django.db import IntegrityError
+
+# Django Library
 from django.contrib.auth import get_user_model
-from django.db.models import Avg
+from django.db import IntegrityError
 
 from rest_framework import serializers, validators
-from rest_framework.relations import SlugRelatedField
 from rest_framework.exceptions import ValidationError
+from rest_framework.relations import SlugRelatedField
 
+# Local Imports
+from .utils import MAX_SCORE_VALUE, MAX_SLUG_LENGTH, MIN_SCORE_VALUE
 from reviews.models import Category, Comment, Genre, Review, Title
-from .utils import MAX_SCORE_VALUE, MIN_SCORE_VALUE, MAX_SLUG_LENGTH
-
 
 User = get_user_model()
 
@@ -71,11 +53,7 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = ("username", "confirmation_code")
 
 
-class BaseCatGenreSerializer(serializers.ModelSerializer):
-'''
-REVIEW
-Нужно избавиться от сокращения Cat 
-'''
+class BaseCategoryGenreSerializer(serializers.ModelSerializer):
     """Общая часть сериалайзера для категорий и жанров."""
 
     class Meta:
@@ -101,37 +79,32 @@ REVIEW
         return value
 
 
-class CategorySerializer(BaseCatGenreSerializer):
+class CategorySerializer(BaseCategoryGenreSerializer):
 
-    class Meta(BaseCatGenreSerializer.Meta):
+    class Meta(BaseCategoryGenreSerializer.Meta):
         model = Category
 
 
-class GenreSerializer(BaseCatGenreSerializer):
+class GenreSerializer(BaseCategoryGenreSerializer):
 
-    class Meta(BaseCatGenreSerializer.Meta):
+    class Meta(BaseCategoryGenreSerializer.Meta):
         model = Genre
 
 
 class BaseTitleSerializer(serializers.ModelSerializer):
     """Основа для сериалайзера модели произведений."""
-    rating = serializers.SerializerMethodField(read_only=True)
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
         fields = '__all__'
-
-    def get_rating(self, obj):
-        reviews = obj.reviews.all()
-        if reviews.exists():
-            return round(reviews.aggregate(Avg('score')).get('score__avg'))
-'''
-REVIEW
-Получить рейтинг нужно не через SerializerMethodField, а через QuerySet.annotate().
-https://docs.djangoproject.com/en/4.2/topics/db/aggregation/
-https://docs.djangoproject.com/en/4.2/ref/models/querysets/#annotate
-'''
-        return None
+        '''
+        REVIEW
+        Получить рейтинг нужно не через SerializerMethodField,
+        а через QuerySet.annotate().
+        https://docs.djangoproject.com/en/4.2/topics/db/aggregation/
+        https://docs.djangoproject.com/en/4.2/ref/models/querysets/#annotate
+        '''
 
 
 class TitleReadSerializer(BaseTitleSerializer):

@@ -1,5 +1,5 @@
+# Standart Library
 from http import HTTPStatus
-
 
 check_name_and_slug_patterns = (
     (

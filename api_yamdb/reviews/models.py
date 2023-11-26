@@ -1,9 +1,10 @@
+# Django Library
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from users.models import CustomUser
-
+# Local Imports
 from .mixins import NameAndSlugAbstract
+from users.models import CustomUser
 
 
 class Category(NameAndSlugAbstract):

@@ -1,5 +1,6 @@
-import pytest
 from rest_framework.test import APIClient
+
+import pytest
 from rest_framework_simplejwt.tokens import AccessToken
 
 

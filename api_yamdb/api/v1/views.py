@@ -1,44 +1,45 @@
+# Standart Library
 import http
 from random import randint
 
-from django.shortcuts import get_object_or_404
+# Django Library
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError
 from django.core.mail import send_mail
+from django.db import IntegrityError
+from django.db.models import Avg
+from django.shortcuts import get_object_or_404
 
-from rest_framework import filters, viewsets, status, permissions
+from rest_framework import filters, permissions, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import (
     CreateModelMixin,
-    ListModelMixin,
     DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.exceptions import ValidationError
+
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework.decorators import action
 
-from reviews.models import Category, Genre, Review, Title
-
+# Local Imports
 from .filters import TitleFilter
-from .permissions import (
-    IsAdmin,
-    IsAdminOrAnon,
-    IsAdminModeratorAuthorReadOnly,
-)
+from .mixins import PatchNotPutModelMixin
+from .permissions import IsAdmin, IsAdminModeratorAuthorReadOnly, IsAdminOrAnon
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
     ReviewSerializer,
+    SignUpSerializer,
     TitleReadSerializer,
     TitleWriteSerializer,
-    SignUpSerializer,
     TokenSerializer,
     UserSerializer,
 )
-
+from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
 
@@ -67,17 +68,18 @@ class SignUpAPIView(APIView):
 
         '''Отправка письма'''
         SUBJECT = 'Токен'
-'''
-REVIEW
-Отправку письма стоит вынести в отдельную функцию и унести её в utils.py
-'''
+        '''
+        REVIEW
+        Отправку письма стоит вынести в отдельную функцию
+        и унести её в utils.py
+        '''
         MESSAGE = f'Код: {confirmation_code}'
         FROM_EMAIL = 'cabugold288@yandex.ru'
-'''
-REVIEW
-Емейл отправителя должен быть задан константой, которая должна храниться в 
-settings.py
-'''
+        '''
+        REVIEW
+        Емейл отправителя должен быть задан константой,
+        которая должна храниться в settings.py
+        '''
         RECIPIENT_LIST = [user.email]
 
         send_mail(
@@ -114,19 +116,19 @@ class TokenAPIView(APIView):
             )
         return Response(
             {'confirmation_code': ['Неверный токен!']},
-'''
-REVIEW
-Токен и код подтверждения - разные сущности. Нужно исправить сообщение
-'''
             status=http.HTTPStatus.BAD_REQUEST,
         )
+        '''
+        REVIEW
+        Токен и код подтверждения - разные сущности. Нужно исправить сообщение
+        '''
 
 
 class UserModelViewSet(ModelViewSet):
-'''
-REVIEW
-Всю логику, связанную с юзером, нужно вынести в соответствующее приложение
-'''
+    '''
+    REVIEW
+    Всю логику, связанную с юзером, нужно вынести в соответствующее приложение
+    '''
     serializer_class = UserSerializer
     permission_classes = [
         IsAdmin,
@@ -141,10 +143,10 @@ REVIEW
         if username:
             return User.objects.filter(username=username)
         return User.objects.all().order_by('id')
-'''
-REVIEW
-.all() можно не использовать, если это не единственный метод QuerySet
-'''
+    '''
+    REVIEW
+    .all() можно не использовать, если это не единственный метод QuerySet
+    '''
 
     @action(
         detail=False,
@@ -164,15 +166,25 @@ REVIEW
         return Response(serializer.data)
 
 
-class TitleViewSet(viewsets.ModelViewSet):
+class TitleViewSet(
+    viewsets.GenericViewSet,
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    PatchNotPutModelMixin,
+    RetrieveModelMixin,
+):
     _title = None
 
     # Кверисет сортируем, чтобы пагинация давала стабильный результат
     queryset = (
-        Title.objects.all()
+        Title.objects
         .order_by('id')
         .select_related('category')
         .prefetch_related('genre')
+        .annotate(
+            rating=Avg('reviews__score'),
+        )
     )
     filterset_class = TitleFilter
     permission_classes = [IsAdminOrAnon]
@@ -187,21 +199,6 @@ class TitleViewSet(viewsets.ModelViewSet):
         if not self._title:
             self._title = super().get_object()
         return self._title
-
-    def update(self, request, *args, **kwargs):
-'''
-REVIEW
-Нужно собрать класс из нужных миксинов и дженериков, а не перекрывать 
-методы явным образом.
-Здесь есть вся необходимая информация (похожим образом сделано в 
-GenreViewSet)
-https://www.django-rest-framework.org/api-guide/generic-views/
-'''
-        if request.method == 'PUT':
-            return Response(
-                status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            )
-        return super().update(request, *args, **kwargs)
 
 
 class GenreViewSet(
@@ -232,22 +229,18 @@ class CategoryViewSet(
     search_fields = ['name']
 
 
-class CommentReviewBase(viewsets.ModelViewSet):
+class CommentReviewBase(
+    viewsets.GenericViewSet,
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    PatchNotPutModelMixin,
+    RetrieveModelMixin,
+):
     def get_review(self):
         review_id = self.kwargs['review_id']
         review = get_object_or_404(Review, pk=review_id)
         return review
-
-    def update(self, request, *args, **kwargs):
-'''
-REVIEW
-См выше
-'''
-        if request.method == 'PUT':
-            return Response(
-                status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            )
-        return super().update(request, *args, **kwargs)
 
 
 class ReviewViewSet(CommentReviewBase):

@@ -1,18 +1,19 @@
-from django.urls import path, include
+# Django Library
+from django.urls import include, path
 
 from rest_framework import routers
 
+# Local Imports
 from .views import (
-    ReviewViewSet,
-    CommentViewSet,
-    TitleViewSet,
-    GenreViewSet,
     CategoryViewSet,
-    UserModelViewSet,
+    CommentViewSet,
+    GenreViewSet,
+    ReviewViewSet,
     SignUpAPIView,
+    TitleViewSet,
     TokenAPIView,
+    UserModelViewSet,
 )
-
 
 router_v1 = routers.DefaultRouter()
 router_v1.register(
