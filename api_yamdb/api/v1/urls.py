@@ -8,10 +8,10 @@ from .views import (
     TitleViewSet,
     GenreViewSet,
     CategoryViewSet,
-    UserModelViewSet,
     SignUpAPIView,
     TokenAPIView,
 )
+from users.views import UserModelViewSet
 
 
 router_v1 = routers.DefaultRouter()

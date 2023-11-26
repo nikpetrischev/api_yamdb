@@ -4,9 +4,8 @@ from random import randint
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from django.core.mail import send_mail
 
-from rest_framework import filters, viewsets, status, permissions
+from rest_framework import filters, viewsets, status
 from rest_framework.mixins import (
     CreateModelMixin,
     ListModelMixin,
@@ -14,10 +13,8 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework.decorators import action
 
 from reviews.models import Category, Genre, Review, Title
 
@@ -36,8 +33,9 @@ from .serializers import (
     TitleWriteSerializer,
     SignUpSerializer,
     TokenSerializer,
-    UserSerializer,
 )
+from api_yamdb.settings import EMAIL_HOST_USER
+from .utils import send_confirmation_code
 
 
 User = get_user_model()
@@ -68,14 +66,12 @@ class SignUpAPIView(APIView):
         '''Отправка письма'''
         SUBJECT = 'Токен'
         MESSAGE = f'Код: {confirmation_code}'
-        FROM_EMAIL = 'cabugold288@yandex.ru'
         RECIPIENT_LIST = [user.email]
 
-        send_mail(
-            subject=SUBJECT,
-            message=MESSAGE,
-            from_email=FROM_EMAIL,
-            recipient_list=RECIPIENT_LIST,
+        send_confirmation_code(
+            SUBJECT, MESSAGE,
+            EMAIL_HOST_USER,
+            RECIPIENT_LIST,
         )
         return Response(
             {'email': f'{email}', 'username': f'{username}'},
@@ -104,43 +100,43 @@ class TokenAPIView(APIView):
                 {'token': f'{token}'}, status=http.HTTPStatus.CREATED
             )
         return Response(
-            {'confirmation_code': ['Неверный токен!']},
+            {'confirmation_code': ['Неверный код подтверждения!']},
             status=http.HTTPStatus.BAD_REQUEST,
         )
 
 
-class UserModelViewSet(ModelViewSet):
-    serializer_class = UserSerializer
-    permission_classes = [
-        IsAdmin,
-    ]
-    filter_backends = [filters.SearchFilter]
-    search_fields = ('=username',)
-    lookup_field = 'username'
-    http_method_names = ['get', 'post', 'delete', 'patch']
+# class UserModelViewSet(ModelViewSet):
+#     serializer_class = UserSerializer
+#     permission_classes = [
+#         IsAdmin,
+#     ]
+#     filter_backends = [filters.SearchFilter]
+#     search_fields = ('=username',)
+#     lookup_field = 'username'
+#     http_method_names = ['get', 'post', 'delete', 'patch']
 
-    def get_queryset(self):
-        username = self.kwargs.get('username')
-        if username:
-            return User.objects.filter(username=username)
-        return User.objects.all().order_by('id')
+#     def get_queryset(self):
+#         username = self.kwargs.get('username')
+#         if username:
+#             return User.objects.filter(username=username)
+#         return User.objects.order_by('id')
 
-    @action(
-        detail=False,
-        url_path='me',
-        methods=['get', 'patch'],
-        permission_classes=[permissions.IsAuthenticated],
-    )
-    def me(self, request):
-        serializer = UserSerializer(
-            request.user,
-            data=request.data,
-            partial=True,
-        )
-        serializer.is_valid(raise_exception=True)
-        if request.method == 'PATCH':
-            serializer.save(role=request.user.role)
-        return Response(serializer.data)
+#     @action(
+#         detail=False,
+#         url_path='me',
+#         methods=['get', 'patch'],
+#         permission_classes=[permissions.IsAuthenticated],
+#     )
+#     def me(self, request):
+#         serializer = UserSerializer(
+#             request.user,
+#             data=request.data,
+#             partial=True,
+#         )
+#         serializer.is_valid(raise_exception=True)
+#         if request.method == 'PATCH':
+#             serializer.save(role=request.user.role)
+#         return Response(serializer.data)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
