@@ -33,7 +33,6 @@ from .serializers import (
     SignUpSerializer,
     TokenSerializer,
 )
-from api_yamdb.settings import EMAIL_HOST_USER
 from .utils import send_confirmation_code
 
 
@@ -69,7 +68,6 @@ class SignUpAPIView(APIView):
 
         send_confirmation_code(
             SUBJECT, MESSAGE,
-            EMAIL_HOST_USER,
             RECIPIENT_LIST,
         )
         return Response(
