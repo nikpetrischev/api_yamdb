@@ -9,6 +9,7 @@ from .serializers import UserSerializer
 
 User = get_user_model()
 
+
 class UserModelViewSet(ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [
