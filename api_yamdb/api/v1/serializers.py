@@ -98,13 +98,6 @@ class BaseTitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = '__all__'
-        '''
-        REVIEW
-        Получить рейтинг нужно не через SerializerMethodField,
-        а через QuerySet.annotate().
-        https://docs.djangoproject.com/en/4.2/topics/db/aggregation/
-        https://docs.djangoproject.com/en/4.2/ref/models/querysets/#annotate
-        '''
 
 
 class TitleReadSerializer(BaseTitleSerializer):
