@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -15,3 +16,8 @@ class UserSerializer(serializers.ModelSerializer):
             "bio",
             "role",
         )
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise ValidationError('Недопустимое имя пользователя!')
+        return value

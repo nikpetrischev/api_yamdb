@@ -20,7 +20,7 @@ class CustomUser(AbstractUser):
         validators=([RegexValidator(regex=r'^[\w.@+-]+\Z')])
     )
     email = models.EmailField(max_length=254, unique=True)
-    bio = models.TextField(blank=True, null=True)
+    bio = models.CharField(max_length=254, blank=True)
     role = models.CharField(max_length=16, choices=CHOICES, default=USER)
     confirmation_code = models.CharField(null=True, max_length=40, blank=True)
 
