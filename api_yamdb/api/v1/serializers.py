@@ -1,4 +1,24 @@
 import re
+'''
+REVIEW
+PEP8:
+Импорты должны быть сгруппированы в следующем порядке:
+- импорты из стандартной библиотеки
+- импорты сторонних библиотек
+- импорты модулей текущего проекта
+Вставляйте пустую строку между каждой группой импортов.  
+Можно автоматизировать процесс расстановки импортов в правильном порядке 
+с помощью isort.
+https://pycqa.github.io/isort/
+По умолчанию isort расставляет все не по PEP8 если локальные модули 
+импортируются с помощью абсолютного пути. Он считает их third-party 
+модулями, наравне с django. 
+Здесь есть гайд, как настроить isort
+https://simpleisbetterthancomplex.com/packages/2016/10/08/isort.html
+После этого в консоли нужно написать
+isort --resolve-all-configs .
+А потом запустить isort
+'''
 from datetime import datetime as dt
 from django.db import IntegrityError
 from django.contrib.auth import get_user_model
@@ -52,6 +72,10 @@ class TokenSerializer(serializers.ModelSerializer):
 
 
 class BaseCatGenreSerializer(serializers.ModelSerializer):
+'''
+REVIEW
+Нужно избавиться от сокращения Cat 
+'''
     """Общая часть сериалайзера для категорий и жанров."""
 
     class Meta:
@@ -101,6 +125,12 @@ class BaseTitleSerializer(serializers.ModelSerializer):
         reviews = obj.reviews.all()
         if reviews.exists():
             return round(reviews.aggregate(Avg('score')).get('score__avg'))
+'''
+REVIEW
+Получить рейтинг нужно не через SerializerMethodField, а через QuerySet.annotate().
+https://docs.djangoproject.com/en/4.2/topics/db/aggregation/
+https://docs.djangoproject.com/en/4.2/ref/models/querysets/#annotate
+'''
         return None
 
 
