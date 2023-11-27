@@ -1,12 +1,15 @@
+# Standart Library
 from http import HTTPStatus
 
-import pytest
+# Django Library
 from django.core import mail
 from django.db.utils import IntegrityError
 
+import pytest
+
 from tests.utils import (
     invalid_data_for_user_patch_and_creation,
-    invalid_data_for_username_and_email_fields
+    invalid_data_for_username_and_email_fields,
 )
 
 

@@ -1,7 +1,9 @@
-from pathlib import Path
+# Standart Library
 import os
 from datetime import timedelta
+from pathlib import Path
 
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -83,6 +85,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
 }
 
+load_dotenv()
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'
 EMAIL_PORT = 587
@@ -90,10 +93,9 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = 'cabugold288@yandex.ru'
-DOTENV_EMAIL_HOST_PASSWORRD = os.getenv('ENV_EMAIL_HOST_PASSWORD')
+ENV_EMAIL_HOST_PASSWORD = os.getenv('ENV_EMAIL_HOST_PASSWORD')
 
-EMAIL_HOST_PASSWORD = DOTENV_EMAIL_HOST_PASSWORRD
-
+EMAIL_HOST_PASSWORD = ENV_EMAIL_HOST_PASSWORD
 EMAIL_SERVER = EMAIL_HOST_USER
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_ADMIN = EMAIL_HOST_USER

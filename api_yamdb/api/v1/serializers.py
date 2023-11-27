@@ -1,31 +1,21 @@
+# Standart Library
 import re
 from datetime import datetime as dt
-from django.db import IntegrityError
+
+# Django Library
 from django.contrib.auth import get_user_model
-from django.db.models import Avg
+from django.db import IntegrityError
 
+# DRF Library
 from rest_framework import serializers, validators
-from rest_framework.relations import SlugRelatedField
 from rest_framework.exceptions import ValidationError
+from rest_framework.relations import SlugRelatedField
 
+# Local Imports
+from .utils import MAX_SCORE_VALUE, MAX_SLUG_LENGTH, MIN_SCORE_VALUE
 from reviews.models import Category, Comment, Genre, Review, Title
-from .utils import MAX_SCORE_VALUE, MIN_SCORE_VALUE, MAX_SLUG_LENGTH
-
 
 User = get_user_model()
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            "username",
-            "email",
-            "first_name",
-            "last_name",
-            "bio",
-            "role",
-        )
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -51,7 +41,7 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = ("username", "confirmation_code")
 
 
-class BaseCatGenreSerializer(serializers.ModelSerializer):
+class BaseCategoryGenreSerializer(serializers.ModelSerializer):
     """Общая часть сериалайзера для категорий и жанров."""
 
     class Meta:
@@ -77,31 +67,25 @@ class BaseCatGenreSerializer(serializers.ModelSerializer):
         return value
 
 
-class CategorySerializer(BaseCatGenreSerializer):
+class CategorySerializer(BaseCategoryGenreSerializer):
 
-    class Meta(BaseCatGenreSerializer.Meta):
+    class Meta(BaseCategoryGenreSerializer.Meta):
         model = Category
 
 
-class GenreSerializer(BaseCatGenreSerializer):
+class GenreSerializer(BaseCategoryGenreSerializer):
 
-    class Meta(BaseCatGenreSerializer.Meta):
+    class Meta(BaseCategoryGenreSerializer.Meta):
         model = Genre
 
 
 class BaseTitleSerializer(serializers.ModelSerializer):
     """Основа для сериалайзера модели произведений."""
-    rating = serializers.SerializerMethodField(read_only=True)
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
         fields = '__all__'
-
-    def get_rating(self, obj):
-        reviews = obj.reviews.all()
-        if reviews.exists():
-            return round(reviews.aggregate(Avg('score')).get('score__avg'))
-        return None
 
 
 class TitleReadSerializer(BaseTitleSerializer):
@@ -200,5 +184,5 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = '__all__'
+        exclude = ('review',)
         read_only_fields = ('review',)

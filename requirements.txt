@@ -7,3 +7,11 @@ pytest-django==4.4.0
 pytest-pythonpath==0.7.3
 django-filter==22.1
 djangorestframework-simplejwt
+python-dotenv==1.0.0
+pytz==2023.3.post1
+sqlparse==0.4.4
+toml==0.10.2
+tomli==2.0.1
+tomlkit==0.12.3
+typing_extensions==4.8.0
+urllib3==1.26.18
