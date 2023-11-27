@@ -1,5 +1,8 @@
-from rest_framework import serializers
+# Django Library
 from django.contrib.auth import get_user_model
+
+# DRF Library
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 User = get_user_model()
