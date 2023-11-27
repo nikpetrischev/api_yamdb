@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import filters, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -21,7 +22,6 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-
 from rest_framework_simplejwt.tokens import AccessToken
 
 # Local Imports
@@ -37,9 +37,9 @@ from .serializers import (
     TitleReadSerializer,
     TitleWriteSerializer,
     TokenSerializer,
-    UserSerializer,
 )
 from reviews.models import Category, Genre, Review, Title
+from .utils import send_confirmation_code
 
 User = get_user_model()
 
@@ -68,25 +68,12 @@ class SignUpAPIView(APIView):
 
         '''Отправка письма'''
         SUBJECT = 'Токен'
-        '''
-        REVIEW
-        Отправку письма стоит вынести в отдельную функцию
-        и унести её в utils.py
-        '''
         MESSAGE = f'Код: {confirmation_code}'
-        FROM_EMAIL = 'cabugold288@yandex.ru'
-        '''
-        REVIEW
-        Емейл отправителя должен быть задан константой,
-        которая должна храниться в settings.py
-        '''
         RECIPIENT_LIST = [user.email]
 
-        send_mail(
-            subject=SUBJECT,
-            message=MESSAGE,
-            from_email=FROM_EMAIL,
-            recipient_list=RECIPIENT_LIST,
+        send_confirmation_code(
+            SUBJECT, MESSAGE,
+            RECIPIENT_LIST,
         )
         return Response(
             {'email': f'{email}', 'username': f'{username}'},
@@ -115,65 +102,12 @@ class TokenAPIView(APIView):
                 {'token': f'{token}'}, status=http.HTTPStatus.CREATED
             )
         return Response(
-            {'confirmation_code': ['Неверный токен!']},
+            {'confirmation_code': ['Неверный код подтверждения!']},
             status=http.HTTPStatus.BAD_REQUEST,
         )
-        '''
-        REVIEW
-        Токен и код подтверждения - разные сущности. Нужно исправить сообщение
-        '''
 
 
-class UserModelViewSet(ModelViewSet):
-    '''
-    REVIEW
-    Всю логику, связанную с юзером, нужно вынести в соответствующее приложение
-    '''
-    serializer_class = UserSerializer
-    permission_classes = [
-        IsAdmin,
-    ]
-    filter_backends = [filters.SearchFilter]
-    search_fields = ('=username',)
-    lookup_field = 'username'
-    http_method_names = ['get', 'post', 'delete', 'patch']
-
-    def get_queryset(self):
-        username = self.kwargs.get('username')
-        if username:
-            return User.objects.filter(username=username)
-        return User.objects.all().order_by('id')
-    '''
-    REVIEW
-    .all() можно не использовать, если это не единственный метод QuerySet
-    '''
-
-    @action(
-        detail=False,
-        url_path='me',
-        methods=['get', 'patch'],
-        permission_classes=[permissions.IsAuthenticated],
-    )
-    def me(self, request):
-        serializer = UserSerializer(
-            request.user,
-            data=request.data,
-            partial=True,
-        )
-        serializer.is_valid(raise_exception=True)
-        if request.method == 'PATCH':
-            serializer.save(role=request.user.role)
-        return Response(serializer.data)
-
-
-class TitleViewSet(
-    viewsets.GenericViewSet,
-    CreateModelMixin,
-    DestroyModelMixin,
-    ListModelMixin,
-    PatchNotPutModelMixin,
-    RetrieveModelMixin,
-):
+class TitleViewSet(viewsets.ModelViewSet):
     _title = None
 
     # Кверисет сортируем, чтобы пагинация давала стабильный результат

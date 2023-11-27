@@ -14,6 +14,7 @@ from .views import (
     TokenAPIView,
     UserModelViewSet,
 )
+from users.views import UserModelViewSet
 
 router_v1 = routers.DefaultRouter()
 router_v1.register(
