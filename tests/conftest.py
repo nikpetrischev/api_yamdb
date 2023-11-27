@@ -1,6 +1,8 @@
+# Standart Library
 import os
 import sys
 
+# Django Library
 from django.utils.version import get_version
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

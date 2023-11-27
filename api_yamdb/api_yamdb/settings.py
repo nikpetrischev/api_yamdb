@@ -1,8 +1,8 @@
-from dotenv import load_dotenv
-from pathlib import Path
+# Standart Library
 import os
+from dotenv import load_dotenv
 from datetime import timedelta
-
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

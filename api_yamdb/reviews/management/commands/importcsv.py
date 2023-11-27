@@ -1,20 +1,16 @@
+# Standart Library
 import csv
 import os
-from typing import Any, Union, TypeVar
+from typing import Any, TypeVar, Union
 
+# Django Library
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from api_yamdb.settings import CSV_FILES_DIR
-from reviews.models import (
-    Category,
-    Comment,
-    Genre,
-    Review,
-    Title,
-)
-
+# Local Imports
+from reviews.models import Category, Comment, Genre, Review, Title
 
 user = get_user_model()
 
