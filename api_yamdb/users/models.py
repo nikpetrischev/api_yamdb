@@ -4,6 +4,10 @@ from django.core.validators import RegexValidator
 from django.db import models
 
 USER = "user"
+'''
+REVIEW
+Давайте сделаем это в виде наследника ChoiceField, как указано в примере?
+'''
 MODERATOR = "moderator"
 ADMIN = "admin"
 
