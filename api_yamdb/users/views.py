@@ -1,11 +1,15 @@
-from rest_framework import filters, permissions
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.decorators import action
-from rest_framework.response import Response
+# Django Library
 from django.contrib.auth import get_user_model
 
-from api.v1.permissions import IsAdmin
+# DRF Library
+from rest_framework import filters, permissions
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
+
+# Local Imports
 from .serializers import UserSerializer
+from api.v1.permissions import IsAdmin
 
 User = get_user_model()
 

@@ -4,15 +4,13 @@ from random import randint
 
 # Django Library
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 
-from rest_framework import filters, permissions, viewsets
-from rest_framework.decorators import action
+# DRF Library
+from rest_framework import filters, viewsets
 from rest_framework.exceptions import ValidationError
-
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -21,13 +19,13 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
+
 from rest_framework_simplejwt.tokens import AccessToken
 
 # Local Imports
 from .filters import TitleFilter
 from .mixins import PatchNotPutModelMixin
-from .permissions import IsAdmin, IsAdminModeratorAuthorReadOnly, IsAdminOrAnon
+from .permissions import IsAdminModeratorAuthorReadOnly, IsAdminOrAnon
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -38,8 +36,8 @@ from .serializers import (
     TitleWriteSerializer,
     TokenSerializer,
 )
-from reviews.models import Category, Genre, Review, Title
 from .utils import send_confirmation_code
+from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
 
@@ -107,7 +105,14 @@ class TokenAPIView(APIView):
         )
 
 
-class TitleViewSet(viewsets.ModelViewSet):
+class TitleViewSet(
+    viewsets.GenericViewSet,
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    PatchNotPutModelMixin,
+    RetrieveModelMixin,
+):
     _title = None
 
     # Кверисет сортируем, чтобы пагинация давала стабильный результат

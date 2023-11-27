@@ -1,5 +1,7 @@
+# Django Library
 from django.core.mail import send_mail
-from api_yamdb.settings import EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
+
+from api_yamdb.settings import EMAIL_HOST_PASSWORD, EMAIL_HOST_USER
 
 MIN_SCORE_VALUE = 1
 MAX_SCORE_VALUE = 10

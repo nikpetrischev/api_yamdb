@@ -1,6 +1,7 @@
 # Django Library
 from django.urls import include, path
 
+# DRF Library
 from rest_framework import routers
 
 # Local Imports
@@ -12,7 +13,6 @@ from .views import (
     SignUpAPIView,
     TitleViewSet,
     TokenAPIView,
-    UserModelViewSet,
 )
 from users.views import UserModelViewSet
 
