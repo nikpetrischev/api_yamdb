@@ -5,11 +5,13 @@ from datetime import datetime as dt
 # Django Library
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
+# from django.core.exceptions import ObjectDoesNotExist
 
 # DRF Library
 from rest_framework import serializers, validators
 from rest_framework.exceptions import ValidationError
 from rest_framework.relations import SlugRelatedField
+# from rest_framework.response import Response
 
 # Local Imports
 from .utils import MAX_SCORE_VALUE, MAX_SLUG_LENGTH, MIN_SCORE_VALUE
@@ -30,6 +32,26 @@ class SignUpSerializer(serializers.ModelSerializer):
         if value == 'me':
             raise ValidationError('Недопустимое имя пользователя!')
         return value
+
+    def validate(self, attrs):
+        try:
+            User.objects.get_or_create(
+                email=attrs['email'],
+                username=attrs['username']
+            )
+        except IntegrityError:
+            user_username = User.objects.filter(
+                username=attrs['username']
+            )
+            if user_username:
+                raise ValidationError(
+                    {'username': 'Пользователь с таким username уже есть!'}
+                )
+            else:
+                raise ValidationError(
+                    {'email': 'Пользователь с таким email уже есть'}
+                )
+        return attrs
 
 
 class TokenSerializer(serializers.ModelSerializer):
@@ -81,7 +103,7 @@ class GenreSerializer(BaseCategoryGenreSerializer):
 
 class BaseTitleSerializer(serializers.ModelSerializer):
     """Основа для сериалайзера модели произведений."""
-    rating = serializers.IntegerField(read_only=True)
+    rating = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Title
