@@ -5,13 +5,11 @@ from datetime import datetime as dt
 # Django Library
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-# from django.core.exceptions import ObjectDoesNotExist
 
 # DRF Library
 from rest_framework import serializers, validators
 from rest_framework.exceptions import ValidationError
 from rest_framework.relations import SlugRelatedField
-# from rest_framework.response import Response
 
 # Local Imports
 from .utils import MAX_SCORE_VALUE, MAX_SLUG_LENGTH, MIN_SCORE_VALUE
@@ -40,25 +38,18 @@ class SignUpSerializer(serializers.ModelSerializer):
                 username=attrs['username']
             )
         except IntegrityError:
-            raise ValidationError(detail='Invalid request data!')
+            user_username = User.objects.filter(
+                username=attrs['username']
+            )
+            if user_username:
+                raise ValidationError(
+                    {'username': 'Пользователь с таким username уже есть!'}
+                )
+            else:
+                raise ValidationError(
+                    {'email': 'Пользователь с таким email уже есть'}
+                )
         return attrs
-    # def validate(self, attrs):
-    #     try:
-    #         User.objects.get_or_create(
-    #             email=attrs['email'],
-    #             username=attrs['username']
-    #         )
-    #     except IntegrityError:
-    #         if User.objects.get(username=attrs['username']):
-    #             if ObjectDoesNotExist:
-    #                 if User.objects.get(email=attrs['email']):
-    #                     if
-    #                     raise ValidationError({
-    # 'username': 'Invalid request data!'})
-    #             raise ValidationError({'email': 'Invalid request data!'})
-    #         else:
-    #             raise ValidationError({'username': 'Invalid request data!'})
-    #     return attrs
 
 
 class TokenSerializer(serializers.ModelSerializer):
