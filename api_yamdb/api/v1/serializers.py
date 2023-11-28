@@ -40,25 +40,18 @@ class SignUpSerializer(serializers.ModelSerializer):
                 username=attrs['username']
             )
         except IntegrityError:
-            raise ValidationError(detail='Invalid request data!')
+            user_username = User.objects.filter(
+                username=attrs['username']
+            )
+            if user_username:
+                raise ValidationError(
+                    {'username': 'Пользователь с таким username уже есть!'}
+                )
+            else:
+                raise ValidationError(
+                    {'email': 'Пользователь с таким email уже есть'}
+                )
         return attrs
-    # def validate(self, attrs):
-    #     try:
-    #         User.objects.get_or_create(
-    #             email=attrs['email'],
-    #             username=attrs['username']
-    #         )
-    #     except IntegrityError:
-    #         if User.objects.get(username=attrs['username']):
-    #             if ObjectDoesNotExist:
-    #                 if User.objects.get(email=attrs['email']):
-    #                     if
-    #                     raise ValidationError({
-    # 'username': 'Invalid request data!'})
-    #             raise ValidationError({'email': 'Invalid request data!'})
-    #         else:
-    #             raise ValidationError({'username': 'Invalid request data!'})
-    #     return attrs
 
 
 class TokenSerializer(serializers.ModelSerializer):
