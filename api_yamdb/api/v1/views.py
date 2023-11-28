@@ -146,7 +146,7 @@ class GenreViewSet(
     DestroyModelMixin,
     ListModelMixin,
 ):
-    queryset = Genre.objects.all().order_by('id')
+    queryset = Genre.objects.order_by('id')
     serializer_class = GenreSerializer
     lookup_field = 'slug'
     permission_classes = [IsAdminOrAnon]
@@ -160,7 +160,7 @@ class CategoryViewSet(
     DestroyModelMixin,
     ListModelMixin,
 ):
-    queryset = Category.objects.all().order_by('id')
+    queryset = Category.objects.order_by('id')
     serializer_class = CategorySerializer
     lookup_field = 'slug'
     permission_classes = [IsAdminOrAnon]
@@ -203,7 +203,7 @@ class CommentViewSet(CommentReviewBase):
 
     def get_queryset(self):
         review = self.get_review()
-        queryset = review.comments.all().order_by('id')
+        queryset = review.comments.order_by('id')
         return queryset
 
     def perform_create(self, serializer):

@@ -31,6 +31,26 @@ class SignUpSerializer(serializers.ModelSerializer):
             raise ValidationError('Недопустимое имя пользователя!')
         return value
 
+    def validate(self, attrs):
+        try:
+            User.objects.get_or_create(
+                email=attrs['email'],
+                username=attrs['username']
+            )
+        except IntegrityError:
+            user_username = User.objects.filter(
+                username=attrs['username']
+            )
+            if user_username:
+                raise ValidationError(
+                    {'username': 'Пользователь с таким username уже есть!'}
+                )
+            else:
+                raise ValidationError(
+                    {'email': 'Пользователь с таким email уже есть'}
+                )
+        return attrs
+
 
 class TokenSerializer(serializers.ModelSerializer):
     confirmation_code = serializers.CharField(required=True)
@@ -81,7 +101,7 @@ class GenreSerializer(BaseCategoryGenreSerializer):
 
 class BaseTitleSerializer(serializers.ModelSerializer):
     """Основа для сериалайзера модели произведений."""
-    rating = serializers.IntegerField(read_only=True)
+    rating = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Title
