@@ -110,7 +110,7 @@ class GenreSerializer(BaseCategoryGenreSerializer):
 
 class BaseTitleSerializer(serializers.ModelSerializer):
     """Основа для сериалайзера модели произведений."""
-    rating = serializers.IntegerField(read_only=True)
+    rating = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Title
